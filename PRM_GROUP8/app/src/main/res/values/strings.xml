@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">PRM_GROUP8</string>
+    <string name="user">User</string>
+    <string name="log_in">Log In</string>
+    <string name="remember_me">Remember me</string>
+    <string name="password">Password</string>
+    <string name="sign_up_for_musicapp">Sign Up for MusicApp</string>
+    <string name="phone_number">Phone Number</string>
+    <string name="register">Register</string>
+</resources>
