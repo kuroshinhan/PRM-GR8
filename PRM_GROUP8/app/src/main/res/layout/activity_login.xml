@@ -11,6 +11,7 @@
         android:id="@+id/main"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="@drawable/gradient_background"
         tools:context=".controller.login">
 
         <androidx.cardview.widget.CardView
@@ -25,7 +26,15 @@
             app:layout_constraintHorizontal_bias="0.498"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_chainStyle="packed" />
+            app:layout_constraintVertical_chainStyle="packed" >
+
+            <ImageView
+                android:id="@+id/circleImageView2"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:src="@mipmap/logomusic" />
+        </androidx.cardview.widget.CardView>
 
         <EditText
             android:id="@+id/phone_number"

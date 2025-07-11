@@ -24,6 +24,8 @@ public class DBHelper extends SQLiteOpenHelper {
     private static final String TABLE_USERS = "users";
     private static final String TABLE_SONGS = "songs";
     private static final String TABLE_ALBUMS = "albums";
+    private static final String TABLE_FAVORITE_SONGS = "favorite_songs";
+    private static final String TABLE_LISTENING_HISTORY = "user_listening_history";
 
 
     // Columns for Users
@@ -47,20 +49,22 @@ public class DBHelper extends SQLiteOpenHelper {
     public static final String COLUMN_ALBUM_TITLE = "title";
     public static final String COLUMN_ALBUM_IMAGE = "image";
     public static final String COLUMN_RELEASE_DATE = "release_date";
-    public static final String COLUMN_USER_ID;
+    public static final String COLUMN_USER_ID = "user_id";
 
-    static {
-        COLUMN_USER_ID = "user_id";
-    }
+    // Thêm constant cho bảng UserListeningHistory
+    public static final String COLUMN_HISTORY_ID = "history_id";
+    public static final String COLUMN_TIMESTAMP = "timestamp";
 
+    // Thêm constant cho bảng FavoriteSongs
+    public static final String COLUMN_FAVORITE_ID = "favorite_id";
     public DBHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
+        initializeDefaultAdmin();
     }
-
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        // 1. Tạo bảng Users trước
+        //  Tạo bảng Users
         String createUsersTable = "CREATE TABLE " + TABLE_USERS + "("
                 + COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
                 + COLUMN_USERNAME + " TEXT NOT NULL, "
@@ -69,7 +73,7 @@ public class DBHelper extends SQLiteOpenHelper {
                 + COLUMN_ROLE + " TEXT NOT NULL, "
                 + COLUMN_IMAGE + " BLOB)";
 
-        // 2. Tạo bảng Albums (phụ thuộc vào Users)
+        //  Tạo bảng Albums
         String createAlbumsTable = "CREATE TABLE " + TABLE_ALBUMS + "("
                 + COLUMN_ALBUM_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
                 + COLUMN_ALBUM_TITLE + " TEXT NOT NULL, "
@@ -79,7 +83,7 @@ public class DBHelper extends SQLiteOpenHelper {
                 + "FOREIGN KEY(" + COLUMN_USER_ID + ") REFERENCES "
                 + TABLE_USERS + "(" + COLUMN_ID + "))";
 
-        // 3. Tạo bảng Songs (phụ thuộc vào Albums)
+        //  Tạo bảng Songs
         String createSongsTable = "CREATE TABLE " + TABLE_SONGS + "("
                 + COLUMN_SONG_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
                 + COLUMN_SONG_TITLE + " TEXT NOT NULL, "
@@ -91,11 +95,137 @@ public class DBHelper extends SQLiteOpenHelper {
                 + "FOREIGN KEY(" + COLUMN_ALBUM_ID + ") REFERENCES "
                 + TABLE_ALBUMS + "(" + COLUMN_ALBUM_ID + "))";
 
+        // Tạo bảng History
+        String createHistoryTable = "CREATE TABLE " + TABLE_LISTENING_HISTORY + "("
+                + COLUMN_HISTORY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
+                + COLUMN_USER_ID + " INTEGER NOT NULL, "
+                + COLUMN_SONG_ID + " INTEGER NOT NULL, "
+                + COLUMN_TIMESTAMP + " DATETIME DEFAULT CURRENT_TIMESTAMP, "
+                + "FOREIGN KEY(" + COLUMN_USER_ID + ") REFERENCES " + TABLE_USERS + "(" + COLUMN_ID + "), "
+                + "FOREIGN KEY(" + COLUMN_SONG_ID + ") REFERENCES " + TABLE_SONGS + "(" + COLUMN_SONG_ID + "))";
+        // Tạo bảng Favorite Songs
+
+        String createFavoriteSongsTable = "CREATE TABLE " + TABLE_FAVORITE_SONGS + "("
+                + COLUMN_FAVORITE_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
+                + COLUMN_USER_ID + " INTEGER NOT NULL, "
+                + COLUMN_SONG_ID + " INTEGER NOT NULL, "
+                + "FOREIGN KEY(" + COLUMN_USER_ID + ") REFERENCES " + TABLE_USERS + "(" + COLUMN_ID + "), "
+                + "FOREIGN KEY(" + COLUMN_SONG_ID + ") REFERENCES " + TABLE_SONGS + "(" + COLUMN_SONG_ID + "), "
+                + "UNIQUE(" + COLUMN_USER_ID + ", " + COLUMN_SONG_ID + "))";
+
+        // Thực thi theo đúng thứ tự
+        db.execSQL(createUsersTable);
+        db.execSQL(createAlbumsTable);
+        db.execSQL(createSongsTable);
+        db.execSQL(createHistoryTable);
+        db.execSQL(createFavoriteSongsTable);
 
         Log.d(TAG, "Database tables created");
+        createDefaultAdmin(db);
     }
-    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
 
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+       // Xóa theo thứ tự ngược lại
+        db.execSQL("DROP TABLE IF EXISTS "+ TABLE_FAVORITE_SONGS);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_LISTENING_HISTORY);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_SONGS);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_ALBUMS);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_USERS);
+        onCreate(db);
+        Log.d(TAG, "Database upgraded from version " + oldVersion + " to " + newVersion);
+    }
+    // User methods
+    public boolean addUser(String username, String password, String phone, String role, byte[] image) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(COLUMN_USERNAME, username);
+        contentValues.put(COLUMN_PASSWORD, password);
+        contentValues.put(COLUMN_PHONE, phone);
+        contentValues.put(COLUMN_ROLE, role);
+        if (image != null) {
+            contentValues.put(COLUMN_IMAGE, image);
+        }
+
+        long result = db.insert(TABLE_USERS, null, contentValues);
+        Log.d(TAG, "Add user result: " + result);
+        return result != -1;
+    }
+
+    public boolean isPhoneNumberExists(String phoneNumber) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.query(TABLE_USERS, new String[]{COLUMN_ID},
+                COLUMN_PHONE + "=?", new String[]{phoneNumber},
+                null, null, null);
+        boolean exists = (cursor.getCount() > 0);
+        cursor.close();
+        return exists;
+    }
+    public User getUserByPhoneAndPassword(String phoneNumber, String password) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        User user = null;
+
+        String[] columns = {COLUMN_ID, COLUMN_USERNAME, COLUMN_PASSWORD, COLUMN_PHONE, COLUMN_ROLE, COLUMN_IMAGE};
+        String selection = COLUMN_PHONE + " = ? AND " + COLUMN_PASSWORD + " = ?";
+        String[] selectionArgs = {phoneNumber, password};
+
+        try (Cursor cursor = db.query(TABLE_USERS, columns, selection, selectionArgs, null, null, null)) {
+            if (cursor != null && cursor.moveToFirst()) {
+                byte[] imageBytes = cursor.getBlob(5);
+                user = new User(
+                        cursor.getInt(0),
+                        cursor.getString(1),
+                        cursor.getString(2),
+                        cursor.getString(3),
+                        cursor.getString(4),
+                        imageBytes
+                );
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting user by phone and password: " + e.getMessage());
+        }
+
+        return user;
+    }
+
+    public void initializeDefaultAdmin() {
+        SQLiteDatabase db = this.getWritableDatabase();
+        Log.d(TAG, "Checking for admin account...");
+
+        Cursor cursor = db.query(TABLE_USERS, new String[]{COLUMN_ID},
+                COLUMN_ROLE + "=?", new String[]{"admin"},
+                null, null, null);
+
+        Log.d(TAG, "Number of admin accounts found: " + cursor.getCount());
+
+        if (cursor.getCount() == 0) {
+            ContentValues values = new ContentValues();
+            values.put(COLUMN_USERNAME, "Admin");
+            values.put(COLUMN_PASSWORD, "admin123");
+            values.put(COLUMN_PHONE, "0123456789");
+            values.put(COLUMN_ROLE, "admin");
+
+            long result = db.insert(TABLE_USERS, null, values);
+            Log.d(TAG, "Admin account creation result: " + result);
+        }
+        cursor.close();
+    }
+    private void createDefaultAdmin(SQLiteDatabase db) {
+        // Kiểm tra xem admin đã tồn tại chưa
+        Cursor cursor = db.query(TABLE_USERS, new String[]{COLUMN_ID},
+                COLUMN_PHONE + "=?", new String[]{"0123456789"},
+                null, null, null);
+
+        if (cursor.getCount() == 0) {
+            ContentValues values = new ContentValues();
+            values.put(COLUMN_USERNAME, "Admin");
+            values.put(COLUMN_PASSWORD, "admin123");
+            values.put(COLUMN_PHONE, "0123456789");
+            values.put(COLUMN_ROLE, "admin");
+
+            db.insert(TABLE_USERS, null, values);
+            Log.d(TAG, "Default admin account created");
+        }
+        cursor.close();
     }
 
 }

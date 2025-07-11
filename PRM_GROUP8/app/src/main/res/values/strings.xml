@@ -4,7 +4,10 @@
     <string name="log_in">Log In</string>
     <string name="remember_me">Remember me</string>
     <string name="password">Password</string>
-    <string name="sign_up_for_musicapp">Sign Up for MusicApp</string>
+    <string name="sign_up_for_musicapp">Sign Up</string>
+    <string name="sign_up">Sign Up</string>
     <string name="phone_number">Phone Number</string>
     <string name="register">Register</string>
+    <string name="your_name">Your Name</string>
+    <string name="confirm_password">Confirm Password</string>
 </resources>
