@@ -23,6 +23,14 @@
         <activity
             android:name=".controller.RegisterAccount"
             android:exported="true" />
+
+        <activity
+            android:name=".controller.HomeAdminActivity"
+            android:exported="true" />
+
+        <activity
+            android:name=".controller.ManagerUserActivity"
+            android:exported="true" />
     </application>
 
 </manifest>
