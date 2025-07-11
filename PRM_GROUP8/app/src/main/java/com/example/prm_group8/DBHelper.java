@@ -150,6 +150,10 @@ public class DBHelper extends SQLiteOpenHelper {
         Log.d(TAG, "Add user result: " + result);
         return result != -1;
     }
+    public boolean deleteUser(int userId) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        return db.delete(TABLE_USERS, COLUMN_ID + "=?", new String[]{String.valueOf(userId)}) > 0;
+    }
 
     public boolean isPhoneNumberExists(String phoneNumber) {
         SQLiteDatabase db = this.getReadableDatabase();
@@ -185,6 +189,33 @@ public class DBHelper extends SQLiteOpenHelper {
         }
 
         return user;
+    }
+    public Cursor getUserDetails() {
+        SQLiteDatabase db = this.getReadableDatabase();
+        String[] columns = {
+                COLUMN_ID,
+                COLUMN_USERNAME,
+                COLUMN_PASSWORD,
+                COLUMN_PHONE,
+                COLUMN_ROLE,
+                COLUMN_IMAGE
+        };
+
+        try {
+            // Truy vấn tất cả user trừ admin
+            return db.query(
+                    TABLE_USERS,
+                    columns,
+                    COLUMN_ROLE + " != ?", // điều kiện loại trừ admin
+                    new String[]{"admin"}, // tham số cho điều kiện
+                    null,
+                    null,
+                    COLUMN_ID + " ASC" // sắp xếp theo ID tăng dần
+            );
+        } catch (Exception e) {
+            Log.e("DBHelper", "Error getting user details: " + e.getMessage());
+            return null;
+        }
     }
 
     public void initializeDefaultAdmin() {

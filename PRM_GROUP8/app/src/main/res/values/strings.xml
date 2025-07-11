@@ -10,4 +10,7 @@
     <string name="register">Register</string>
     <string name="your_name">Your Name</string>
     <string name="confirm_password">Confirm Password</string>
+    <string name="manager_user">Manager User</string>
+    <string name="delete">Delete</string>
+    <string name="no_user_information">No user information</string>
 </resources>
