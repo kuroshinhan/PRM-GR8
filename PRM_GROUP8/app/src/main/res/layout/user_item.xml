@@ -40,11 +40,11 @@
             app:layout_constraintEnd_toStartOf="@id/btn_detail"/>
 
         <TextView
-            android:id="@+id/phoneTextView"
+            android:id="@+id/emailTextView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:drawableStart="@android:drawable/ic_menu_call"
+            android:drawableStart="@android:drawable/ic_dialog_email"
             android:drawablePadding="8dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/usernameTextView" />
@@ -58,7 +58,7 @@
             android:padding="4dp"
             android:textColor="@android:color/white"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/phoneTextView" />
+            app:layout_constraintTop_toBottomOf="@id/emailTextView" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_detail"

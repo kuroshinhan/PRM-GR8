@@ -38,7 +38,7 @@ public class HomeAdminActivity extends AppCompatActivity {
         });
 
         btnLogout.setOnClickListener(view -> {
-            Intent intent = new Intent(this, login.class);
+            Intent intent = new Intent(this, LoginActivity.class);
             startActivity(intent);
         });
 

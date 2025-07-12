@@ -1,16 +1,21 @@
 <resources>
     <string name="app_name">PRM_GROUP8</string>
     <string name="user">User</string>
+    <string name="search">Search</string>
+    <string name="setting">Setting</string>
+    <string name="home">Home</string>
     <string name="log_in">Log In</string>
     <string name="remember_me">Remember me</string>
     <string name="password">Password</string>
     <string name="sign_up_for_musicapp">Sign Up</string>
     <string name="sign_up">Sign Up</string>
-    <string name="phone_number">Phone Number</string>
+    <string name="email">Email</string>
     <string name="register">Register</string>
     <string name="your_name">Your Name</string>
     <string name="confirm_password">Confirm Password</string>
     <string name="manager_user">Manager User</string>
     <string name="delete">Delete</string>
     <string name="no_user_information">No user information</string>
+    <string name="made_for_you">Made For You</string>
+    <string name="favorite_songs">Favorite Songs</string>
 </resources>

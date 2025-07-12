@@ -72,15 +72,14 @@
             app:layout_constraintTop_toBottomOf="@+id/textView2" />
 
         <EditText
-            android:id="@+id/phone_number"
+            android:id="@+id/email"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="16dp"
             android:layout_marginTop="24dp"
             android:backgroundTint="#BDBCBC"
-            android:hint="@string/phone_number"
-            android:inputType="phone"
-            android:maxLength="10"
+            android:hint="@string/email"
+            android:inputType="text|textEmailAddress"
             android:textColor="#FFFFFF"
             android:textColorHint="#898282"
             app:layout_constraintEnd_toEndOf="parent"
@@ -100,7 +99,7 @@
             android:textColorHint="#898282"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/phone_number" />
+            app:layout_constraintTop_toBottomOf="@+id/email" />
 
         <EditText
             android:id="@+id/confirmPassword"

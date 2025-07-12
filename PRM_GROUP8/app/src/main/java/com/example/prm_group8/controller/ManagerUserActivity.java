@@ -84,15 +84,13 @@ public class ManagerUserActivity extends AppCompatActivity {
             if (cursor != null && cursor.moveToFirst()) {
                 do {
                     User user = new User(
-
-                            cursor.getInt(0),  // id
-                            cursor.getString(1),  // username
-                            cursor.getString(2),  // password
-                            cursor.getString(3),  // phone
-                            cursor.getString(4),  // role
-                            cursor.getBlob(5)
-
-
+                            cursor.getInt(0),    // id
+                            cursor.getString(1), // username
+                            cursor.getString(2), // password
+                            cursor.getString(3), // email
+                            cursor.getString(4), // role
+                            cursor.getBlob(5),   // image
+                            cursor.getInt(6) == 1 // isEmailVerified
                     );
                     users.add(user);
                     Log.d(TAG, "User added: " + user.toString());
@@ -108,6 +106,7 @@ public class ManagerUserActivity extends AppCompatActivity {
         }
         return users;
     }
+
     private void deleteUser(User user) {
         new Thread(() -> {
             boolean success = dbHelper.deleteUser(user.getId());

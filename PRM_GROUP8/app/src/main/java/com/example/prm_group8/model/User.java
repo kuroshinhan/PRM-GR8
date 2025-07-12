@@ -4,33 +4,37 @@ public class User {
     private int id;
     private String username;
     private String password;
-    private String phoneNumber;
+    private String email;
     private String role;
-    private byte[] image; // Thay đổi kiểu dữ liệu từ String sang byte[]
+    private byte[] image;
+    private boolean isEmailVerified;
 
     // Constructor đầy đủ
-    public User(int id, String username, String password, String phoneNumber, String role, byte[] image) {
+    public User(int id, String username, String password, String email, String role, byte[] image, boolean isEmailVerified) {
         this.id = id;
         this.username = username;
         this.password = password;
-        this.phoneNumber = phoneNumber;
+        this.email = email;
         this.role = role;
         this.image = image;
+        this.isEmailVerified = isEmailVerified;
     }
 
-    // Constructor không có image
-    public User(String username, String phoneNumber, String role) {
+    // Constructor không có image và isEmailVerified
+    public User(String username, String email, String role) {
         this.username = username;
-        this.phoneNumber = phoneNumber;
+        this.email = email;
         this.role = role;
+        this.isEmailVerified = false; // Default to unverified
     }
 
     // Constructor không có id và password
-    public User(String username, String phoneNumber, String role, byte[] image) {
+    public User(String username, String email, String role, byte[] image) {
         this.username = username;
-        this.phoneNumber = phoneNumber;
+        this.email = email;
         this.role = role;
         this.image = image;
+        this.isEmailVerified = false; // Default to unverified
     }
 
     // Getters and Setters
@@ -58,12 +62,12 @@ public class User {
         this.password = password;
     }
 
-    public String getPhoneNumber() {
-        return phoneNumber;
+    public String getEmail() {
+        return email;
     }
 
-    public void setPhoneNumber(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public String getRole() {
@@ -82,14 +86,22 @@ public class User {
         this.image = image;
     }
 
+    public boolean isEmailVerified() {
+        return isEmailVerified;
+    }
+
+    public void setEmailVerified(boolean emailVerified) {
+        isEmailVerified = emailVerified;
+    }
+
     @Override
     public String toString() {
         return "User{" +
                 "id=" + id +
                 ", username='" + username + '\'' +
-                ", phoneNumber='" + phoneNumber + '\'' +
+                ", email='" + email + '\'' +
                 ", role='" + role + '\'' +
+                ", isEmailVerified=" + isEmailVerified +
                 '}';
     }
-
 }

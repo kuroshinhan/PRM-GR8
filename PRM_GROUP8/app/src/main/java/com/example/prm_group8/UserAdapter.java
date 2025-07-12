@@ -62,7 +62,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
     static class UserViewHolder extends RecyclerView.ViewHolder {
         private ImageView avatarImageView;
         private TextView usernameTextView;
-        private TextView phoneTextView;
+        private TextView emailTextView;
         private TextView roleTextView;
         private Button deleteButton;
 
@@ -70,7 +70,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
             super(itemView);
             avatarImageView = itemView.findViewById(R.id.avatarImageView);
             usernameTextView = itemView.findViewById(R.id.usernameTextView);
-            phoneTextView = itemView.findViewById(R.id.phoneTextView);
+            emailTextView = itemView.findViewById(R.id.emailTextView);
             roleTextView = itemView.findViewById(R.id.roleTextView);
             deleteButton = itemView.findViewById(R.id.btn_detail);
         }
@@ -88,7 +88,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
             }
 
             usernameTextView.setText(user.getUsername());
-            phoneTextView.setText(user.getPhoneNumber());
+            emailTextView.setText(user.getEmail());
             roleTextView.setText(user.getRole());
         }
     }
