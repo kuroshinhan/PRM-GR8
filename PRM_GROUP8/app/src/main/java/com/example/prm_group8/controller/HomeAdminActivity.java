@@ -25,6 +25,8 @@ public class HomeAdminActivity extends AppCompatActivity {
 
     private void initializeViews() {
         btnManageUsers = findViewById(R.id.btn_manager_user);
+        btnManageAlbums = findViewById(R.id.btn_manager_album);
+        btnManageSongs = findViewById(R.id.btn_manager_song);
         btnLogout = findViewById(R.id.buttonLogout);
     }
 
@@ -37,6 +39,22 @@ public class HomeAdminActivity extends AppCompatActivity {
             }
         });
 
+        btnManageSongs.setOnClickListener(v -> {
+            if (checkAdminPermission()) {
+                navigateToActivity(ManagerSongActivity.class);
+            } else {
+                showPermissionDeniedMessage();
+            }
+        });
+        btnManageAlbums.setOnClickListener(
+                v -> {
+                    if (checkAdminPermission()) {
+                        navigateToActivity(ManagerSongActivity.class);
+                    } else {
+                        showPermissionDeniedMessage();
+                    }
+                }
+        );
         btnLogout.setOnClickListener(view -> {
             Intent intent = new Intent(this, LoginActivity.class);
             startActivity(intent);
