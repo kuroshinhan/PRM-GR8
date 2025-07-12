@@ -7,7 +7,11 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
+import com.example.prm_group8.model.Song;
 import com.example.prm_group8.model.User;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class DBHelper extends SQLiteOpenHelper {
 
@@ -251,5 +255,115 @@ public class DBHelper extends SQLiteOpenHelper {
                 new String[]{COLUMN_ID, COLUMN_USERNAME, COLUMN_PASSWORD, COLUMN_EMAIL, COLUMN_ROLE, COLUMN_IMAGE, COLUMN_IS_EMAIL_VERIFIED},
                 COLUMN_ROLE + "!=?", new String[]{"admin"},
                 null, null, COLUMN_ID + " ASC");
+    }
+    public int getOrCreateDefaultAlbum() {
+        SQLiteDatabase db = this.getWritableDatabase();
+
+        // Kiểm tra xem album mặc định đã tồn tại chưa
+        Cursor cursor = db.query(TABLE_ALBUMS, new String[]{COLUMN_ALBUM_ID},
+                COLUMN_ALBUM_TITLE + "=?", new String[]{"Default Album"},
+                null, null, null);
+
+        if (cursor.moveToFirst()) {
+            int albumId = cursor.getInt(0);
+            cursor.close();
+            return albumId;
+        }
+
+        // Nếu chưa có, tạo album mặc định
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_ALBUM_TITLE, "Default Album");
+        values.put(COLUMN_RELEASE_DATE, "2024-01-01");
+        values.put(COLUMN_USER_ID, 1); // Giả sử user_id = 1 là admin
+
+        long albumId = db.insert(TABLE_ALBUMS, null, values);
+        cursor.close();
+        return (int) albumId;
+    }
+    public boolean addSong(String title, String artist, int albumId, int duration, String songUrl, byte[] image) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues contentValues = new ContentValues();
+
+        // Nếu không có albumId được chỉ định, sử dụng album mặc định
+        if (albumId <= 0) {
+            albumId = getOrCreateDefaultAlbum();
+        }
+
+        contentValues.put(COLUMN_SONG_TITLE, title);
+        contentValues.put(COLUMN_ARTIST, artist);
+        contentValues.put(COLUMN_ALBUM_ID, albumId);
+        contentValues.put(COLUMN_DURATION, duration);
+        contentValues.put(COLUMN_SONG_URL, songUrl);
+        if (image != null) {
+            contentValues.put(COLUMN_SONG_IMAGE, image);
+        }
+
+        long result = db.insert(TABLE_SONGS, null, contentValues);
+        Log.d(TAG, "Add song result: " + result + " for song: " + title);
+        return result != -1;
+    }
+
+    public List<Song> getAllSongs() {
+        List<Song> songs = new ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.query(TABLE_SONGS, null, null, null, null, null, null);
+
+        Log.d(TAG, "getAllSongs: Total rows = " + cursor.getCount());
+
+        if (cursor.moveToFirst()) {
+            do {
+                Song song = new Song(
+                        cursor.getInt(0),
+                        cursor.getString(1),
+                        cursor.getString(2),
+                        cursor.getInt(3),
+                        cursor.getInt(4),
+                        cursor.getString(5),
+                        cursor.getBlob(6)
+                );
+                songs.add(song);
+                Log.d(TAG, "getAllSongs: Added song - " + song.getTitle());
+            } while (cursor.moveToNext());
+        } else {
+            Log.d(TAG, "getAllSongs: No songs found in database");
+        }
+        cursor.close();
+        Log.d(TAG, "getAllSongs: Total songs retrieved = " + songs.size());
+        return songs;
+    }
+
+    public boolean deleteSong(int songId) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        int rowsAffected = db.delete(TABLE_SONGS, COLUMN_SONG_ID + " = ?", new String[]{String.valueOf(songId)});
+        return rowsAffected > 0;
+    }
+
+    public boolean addFavoriteSong(int userId, int songId) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_USER_ID, userId);
+        values.put(COLUMN_SONG_ID, songId);
+
+        long result = db.insert(TABLE_FAVORITE_SONGS, null, values);
+        return result != -1;
+    }
+
+    public boolean removeFavoriteSong(int userId, int songId) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        int rowsDeleted = db.delete(TABLE_FAVORITE_SONGS,
+                COLUMN_USER_ID + " = ? AND " + COLUMN_SONG_ID + " = ?",
+                new String[]{String.valueOf(userId), String.valueOf(songId)});
+        return rowsDeleted > 0;
+    }
+
+    public boolean isSongFavorite(int userId, int songId) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.query(TABLE_FAVORITE_SONGS, null,
+                COLUMN_USER_ID + " = ? AND " + COLUMN_SONG_ID + " = ?",
+                new String[]{String.valueOf(userId), String.valueOf(songId)},
+                null, null, null);
+        boolean isFavorite = cursor.getCount() > 0;
+        cursor.close();
+        return isFavorite;
     }
 }

@@ -32,6 +32,16 @@
             android:name=".controller.ManagerUserActivity"
             android:exported="true" />
 
+        <activity
+            android:name=".controller.ManagerSongActivity"
+            android:exported="true" />
+        <activity
+            android:name=".controller.AddSongActivity"
+            android:exported="true" />
+
+        <activity
+            android:name=".controller.Play_song"
+            android:exported="true" />
 
         <activity
             android:name=".controller.HomeUser"

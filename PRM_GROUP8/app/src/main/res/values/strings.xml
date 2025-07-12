@@ -14,6 +14,7 @@
     <string name="your_name">Your Name</string>
     <string name="confirm_password">Confirm Password</string>
     <string name="manager_user">Manager User</string>
+    <string name="manager_song">Manager Song</string>
     <string name="delete">Delete</string>
     <string name="no_user_information">No user information</string>
     <string name="made_for_you">Made For You</string>
