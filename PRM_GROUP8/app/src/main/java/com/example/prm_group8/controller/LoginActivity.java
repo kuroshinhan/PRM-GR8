@@ -102,7 +102,7 @@ public class LoginActivity extends AppCompatActivity {
         String password = passwordEditText.getText().toString().trim();
 
         if (email.isEmpty() || password.isEmpty()) {
-            Toast.makeText(this, "Please enter both email and password", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Vui lòng nhập cả email và mật khẩu", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -119,7 +119,7 @@ public class LoginActivity extends AppCompatActivity {
 
                 Log.d(TAG, "User role: " + user.getRole());
                 if ("user".equalsIgnoreCase(user.getRole())) {
-                    Toast.makeText(this, "Login Successful as User", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Đăng nhập thành công với tư cách là người dùng", Toast.LENGTH_SHORT).show();
                     Intent intent = new Intent(this, HomeUser.class);
                     intent.putExtra(EXTRA_USER_ID, user.getId());
                     if (remember.isChecked()) {
@@ -132,7 +132,7 @@ public class LoginActivity extends AppCompatActivity {
                     }
                     startActivity(intent);
                 } else if ("admin".equalsIgnoreCase(user.getRole())) {
-                    Toast.makeText(this, "Login Successful as Admin", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Đăng nhập thành công với tư cách Quản trị viên", Toast.LENGTH_SHORT).show();
                     Intent intent = new Intent(this, HomeAdminActivity.class);
                     intent.putExtra(EXTRA_USER_ID, user.getId());
                     if (remember.isChecked()) {
@@ -145,16 +145,16 @@ public class LoginActivity extends AppCompatActivity {
                     }
                     startActivity(intent);
                 } else {
-                    Toast.makeText(this, "Invalid user role", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Vai trò người dùng không hợp lệ", Toast.LENGTH_SHORT).show();
                 }
             } else {
                 editor.clear();
                 editor.apply();
-                Toast.makeText(this, "Invalid email or password", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Email hoặc mật khẩu không hợp lệ", Toast.LENGTH_SHORT).show();
             }
         } catch (Exception e) {
-            Log.e(TAG, "Error during login", e);
-            Toast.makeText(this, "Login error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            Log.e(TAG, "Lỗi khi đăng nhập", e);
+            Toast.makeText(this, "Lỗi đăng nhập: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 

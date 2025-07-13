@@ -8,10 +8,6 @@
         android:icon="@drawable/icon_search"
         android:title="@string/search" />
     <item
-        android:id="@+id/nav_setting"
-        android:icon="@drawable/icon_setting"
-        android:title="@string/setting" />
-    <item
         android:id="@+id/nav_user"
         android:icon="@drawable/icon_user"
         android:title="@string/user" />

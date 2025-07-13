@@ -46,6 +46,15 @@
         <activity
             android:name=".controller.HomeUser"
             android:exported="true" />
+        <activity
+            android:name=".SearchActivity"
+            android:exported="true" />
+        <activity
+            android:name=".SettingActivity"
+            android:exported="true" />
+        <activity
+            android:name=".UserActivity"
+            android:exported="true" />
 
     </application>
 

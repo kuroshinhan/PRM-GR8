@@ -256,6 +256,21 @@ public class DBHelper extends SQLiteOpenHelper {
                 COLUMN_ROLE + "!=?", new String[]{"admin"},
                 null, null, COLUMN_ID + " ASC");
     }
+    public boolean updateUser(User user) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_USERNAME, user.getUsername());
+        values.put(COLUMN_PASSWORD, user.getPassword());
+        values.put(COLUMN_EMAIL, user.getEmail());
+        values.put(COLUMN_ROLE, user.getRole());
+        if (user.getImage() != null) {
+            values.put(COLUMN_IMAGE, user.getImage());
+        }
+
+        int rowsAffected = db.update(TABLE_USERS, values, COLUMN_ID + " = ?",
+                new String[]{String.valueOf(user.getId())});
+        return rowsAffected > 0;
+    }
     public int getOrCreateDefaultAlbum() {
         SQLiteDatabase db = this.getWritableDatabase();
 
@@ -331,7 +346,26 @@ public class DBHelper extends SQLiteOpenHelper {
         Log.d(TAG, "getAllSongs: Total songs retrieved = " + songs.size());
         return songs;
     }
+    public Song getSongById(int songId) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Song song = null;
 
+        Cursor cursor = db.query(TABLE_SONGS, null, COLUMN_SONG_ID + "=?",
+                new String[]{String.valueOf(songId)}, null, null, null);
+        if (cursor.moveToFirst()) {
+            song = new Song(
+                    cursor.getInt(0),
+                    cursor.getString(1),
+                    cursor.getString(2),
+                    cursor.getInt(3),
+                    cursor.getInt(4),
+                    cursor.getString(5),
+                    cursor.getBlob(6)
+            );
+        }
+        cursor.close();
+        return song;
+    }
     public boolean deleteSong(int songId) {
         SQLiteDatabase db = this.getWritableDatabase();
         int rowsAffected = db.delete(TABLE_SONGS, COLUMN_SONG_ID + " = ?", new String[]{String.valueOf(songId)});
@@ -366,4 +400,104 @@ public class DBHelper extends SQLiteOpenHelper {
         cursor.close();
         return isFavorite;
     }
+    public List<Song> getFavoriteSongs(int userId) {
+        List<Song> favoriteSongs = new ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        String query = "SELECT s.* FROM " + TABLE_SONGS + " s "
+                + "INNER JOIN " + TABLE_FAVORITE_SONGS + " f ON s." + COLUMN_SONG_ID + " = f." + COLUMN_SONG_ID
+                + " WHERE f." + COLUMN_USER_ID + " = ?";
+
+        Cursor cursor = db.rawQuery(query, new String[]{String.valueOf(userId)});
+
+        if (cursor.moveToFirst()) {
+            do {
+                Song song = new Song(
+                        cursor.getInt(0),
+                        cursor.getString(1),
+                        cursor.getString(2),
+                        cursor.getInt(3),
+                        cursor.getInt(4),
+                        cursor.getString(5),
+                        cursor.getBlob(6)
+                );
+                favoriteSongs.add(song);
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        return favoriteSongs;
+    }
+    public boolean addListeningHistory(int userId, int songId) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_USER_ID, userId);
+        values.put(COLUMN_SONG_ID, songId);
+        // Timestamp sẽ tự động được thêm vào nhờ DEFAULT CURRENT_TIMESTAMP
+
+        long result = db.insert(TABLE_LISTENING_HISTORY, null, values);
+        return result != -1;
+    }
+    public static class ListeningHistoryItem {
+        private int historyId;
+        private int userId;
+        private int songId;
+        private String songTitle;
+        private String artist;
+        private String timestamp;
+
+        public ListeningHistoryItem(int historyId, int userId, int songId,
+                                    String songTitle, String artist, String timestamp) {
+            this.historyId = historyId;
+            this.userId = userId;
+            this.songId = songId;
+            this.songTitle = songTitle;
+            this.artist = artist;
+            this.timestamp = timestamp;
+        }
+
+        // Getters
+        public int getHistoryId() { return historyId; }
+        public int getUserId() { return userId; }
+        public int getSongId() { return songId; }
+        public String getSongTitle() { return songTitle; }
+        public String getArtist() { return artist; }
+        public String getTimestamp() { return timestamp; }
+    }
+    public List<ListeningHistoryItem> getUserListeningHistory(int userId) {
+        List<ListeningHistoryItem> history = new ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        String query = "SELECT h." + COLUMN_HISTORY_ID + ", h." + COLUMN_USER_ID +
+                ", h." + COLUMN_SONG_ID + ", s." + COLUMN_SONG_TITLE +
+                ", s." + COLUMN_ARTIST + ", h." + COLUMN_TIMESTAMP +
+                " FROM " + TABLE_LISTENING_HISTORY + " h" +
+                " JOIN " + TABLE_SONGS + " s ON h." + COLUMN_SONG_ID + " = s." + COLUMN_SONG_ID +
+                " WHERE h." + COLUMN_USER_ID + " = ?" +
+                " ORDER BY h." + COLUMN_TIMESTAMP + " DESC";
+
+        try (Cursor cursor = db.rawQuery(query, new String[]{String.valueOf(userId)})) {
+            Log.d(TAG, "Executing query: " + query + " with userId: " + userId);
+            if (cursor.moveToFirst()) {
+                do {
+                    ListeningHistoryItem item = new ListeningHistoryItem(
+                            cursor.getInt(0),    // history_id
+                            cursor.getInt(1),    // user_id
+                            cursor.getInt(2),    // song_id
+                            cursor.getString(3),  // song_title
+                            cursor.getString(4),  // artist
+                            cursor.getString(5)   // timestamp
+                    );
+                    history.add(item);
+                } while (cursor.moveToNext());
+            } else {
+                Log.d(TAG, "No history found for userId: " + userId);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting user listening history: " + e.getMessage());
+        }
+
+        Log.d(TAG, "Total history items retrieved: " + history.size());
+        return history;
+    }
+
 }

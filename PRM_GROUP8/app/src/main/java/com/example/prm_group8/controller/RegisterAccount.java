@@ -50,7 +50,7 @@ public class RegisterAccount extends AppCompatActivity {
         String email = etEmail.getText().toString().trim();
 
         if (dbHelper.isEmailExists(email)) {
-            Toast.makeText(this, "Email already exists. Please use a different email.", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Email đã tồn tại. Vui lòng sử dụng email khác.", Toast.LENGTH_LONG).show();
             return;
         }
 
@@ -60,10 +60,10 @@ public class RegisterAccount extends AppCompatActivity {
             boolean success = dbHelper.addUser(username, password, email, role, null);
 
             if (success) {
-                Toast.makeText(this, "Registration Successful", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Đăng ký thành công", Toast.LENGTH_SHORT).show();
                 loginUser(email, password);
             } else {
-                Toast.makeText(this, "Registration Failed", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Đăng ký không thành công", Toast.LENGTH_SHORT).show();
             }
         }
     }
@@ -82,19 +82,19 @@ public class RegisterAccount extends AppCompatActivity {
 
     private boolean validateInput(String username, String password, String confirmPassword, String email) {
         if (username.isEmpty() || password.isEmpty() || confirmPassword.isEmpty() || email.isEmpty()) {
-            Toast.makeText(this, "All fields are required", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Tất cả các trường đều bắt buộc", Toast.LENGTH_SHORT).show();
             return false;
         }
         if (!password.equals(confirmPassword)) {
-            Toast.makeText(this, "Passwords do not match", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Mật khẩu không khớp", Toast.LENGTH_SHORT).show();
             return false;
         }
         if (password.length() < 6) {
-            Toast.makeText(this, "Password must be at least 6 characters long", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Mật khẩu phải dài ít nhất 6 ký tự", Toast.LENGTH_SHORT).show();
             return false;
         }
         if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            Toast.makeText(this, "Invalid email address", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Địa chỉ email không hợp lệ", Toast.LENGTH_SHORT).show();
             return false;
         }
         return true;
