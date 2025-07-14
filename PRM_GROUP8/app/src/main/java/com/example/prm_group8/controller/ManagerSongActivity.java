@@ -118,10 +118,7 @@ public class ManagerSongActivity extends AppCompatActivity {
         PopupMenu popup = new PopupMenu(this, view);
         popup.inflate(R.menu.song_item_menu);
         popup.setOnMenuItemClickListener(item -> {
-            if (item.getItemId() == R.id.action_edit) {
-                editSong(song);
-                return true;
-            } else if (item.getItemId() == R.id.action_delete) {
+            if (item.getItemId() == R.id.action_delete) {
                 deleteSong(song);
                 return true;
             }
