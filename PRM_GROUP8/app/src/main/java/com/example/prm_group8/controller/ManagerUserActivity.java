@@ -42,7 +42,7 @@ public class ManagerUserActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
-        userRecyclerView = findViewById(R.id.songRecyclerView);
+        userRecyclerView = findViewById(R.id.songRecyclerView); // Lưu ý: Có thể cần sửa thành userRecyclerView
         dbHelper = new DBHelper(this);
         setupRecyclerView();
         loadUserData();
@@ -77,32 +77,12 @@ public class ManagerUserActivity extends AppCompatActivity {
 
     private List<User> fetchUsersFromDatabase() {
         List<User> users = new ArrayList<>();
-        Cursor cursor = null;
         try {
-            cursor = dbHelper.getUserDetails();
-            Log.d(TAG, "Cursor returned from database: " + (cursor != null ? cursor.getCount() : "null"));
-            if (cursor != null && cursor.moveToFirst()) {
-                do {
-                    User user = new User(
-                            cursor.getInt(0),    // id
-                            cursor.getString(1), // username
-                            cursor.getString(2), // password
-                            cursor.getString(3), // email
-                            cursor.getString(4), // role
-                            cursor.getBlob(5),   // image
-                            cursor.getInt(6) == 1 // isEmailVerified
-                    );
-                    users.add(user);
-                    Log.d(TAG, "User added: " + user.toString());
-                } while (cursor.moveToNext());
-            }
+            users = dbHelper.getAllUsers(); // Sử dụng getAllUsers() thay vì getUserDetails()
+            Log.d(TAG, "Users retrieved from database: " + (users != null ? users.size() : "null"));
         } catch (Exception e) {
             Log.e(TAG, "Error loading user data", e);
             runOnUiThread(() -> Toast.makeText(this, "Error loading user data: " + e.getMessage(), Toast.LENGTH_LONG).show());
-        } finally {
-            if (cursor != null && !cursor.isClosed()) {
-                cursor.close();
-            }
         }
         return users;
     }
@@ -120,6 +100,7 @@ public class ManagerUserActivity extends AppCompatActivity {
             });
         }).start();
     }
+
     private void showEmptyState() {
         Log.d(TAG, "Showing empty state");
         userRecyclerView.setVisibility(View.GONE);
@@ -129,6 +110,6 @@ public class ManagerUserActivity extends AppCompatActivity {
     private void hideEmptyState() {
         Log.d(TAG, "Hiding empty state");
         userRecyclerView.setVisibility(View.VISIBLE);
-        findViewById(R.id.emptyStateView).setVisibility(View .GONE);
+        findViewById(R.id.emptyStateView).setVisibility(View.GONE);
     }
 }

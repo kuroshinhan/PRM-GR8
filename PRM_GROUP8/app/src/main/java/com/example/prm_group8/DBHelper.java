@@ -9,6 +9,8 @@ import android.util.Log;
 
 import com.example.prm_group8.model.Song;
 import com.example.prm_group8.model.User;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -137,28 +139,28 @@ public class DBHelper extends SQLiteOpenHelper {
 
     private void createDefaultAdmin(SQLiteDatabase db) {
         Cursor cursor = db.query(TABLE_USERS, new String[]{COLUMN_ID},
-                COLUMN_EMAIL + "=?", new String[]{"admin@prm_group8"},
+                COLUMN_EMAIL + "=?", new String[]{"han171023fpt@gmail.com"},
                 null, null, null);
 
         if (cursor.getCount() == 0) {
             ContentValues values = new ContentValues();
             values.put(COLUMN_USERNAME, "Admin");
             values.put(COLUMN_PASSWORD, "admin123");
-            values.put(COLUMN_EMAIL, "admin@prm_group8");
+            values.put(COLUMN_EMAIL, "han171023fpt@gmail.com");
             values.put(COLUMN_ROLE, "admin");
             values.put(COLUMN_IS_EMAIL_VERIFIED, 1); // Admin is verified by default
             db.insert(TABLE_USERS, null, values);
-            Log.d(TAG, "Default admin account created");
+            Log.d(TAG, "Default admin account created in SQLite");
+
         }
         cursor.close();
     }
 
     // User methods
-    public boolean addUser(String username, String password, String email, String role, byte[] image) {
+    public boolean addUser(String username, String email, String role, byte[] image) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(COLUMN_USERNAME, username);
-        values.put(COLUMN_PASSWORD, password);
         values.put(COLUMN_EMAIL, email);
         values.put(COLUMN_ROLE, role);
         values.put(COLUMN_IS_EMAIL_VERIFIED, 0);
@@ -170,7 +172,12 @@ public class DBHelper extends SQLiteOpenHelper {
         Log.d(TAG, "Add user result: " + result);
         return result != -1;
     }
-
+    public void syncEmailVerificationStatus(String email, boolean isVerified) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_IS_EMAIL_VERIFIED, isVerified ? 1 : 0);
+        db.update(TABLE_USERS, values, COLUMN_EMAIL + "=?", new String[]{email});
+    }
     public boolean deleteUser(int userId) {
         SQLiteDatabase db = this.getWritableDatabase();
         int rowsAffected = db.delete(TABLE_USERS, COLUMN_ID + "=?", new String[]{String.valueOf(userId)});
@@ -209,7 +216,28 @@ public class DBHelper extends SQLiteOpenHelper {
         cursor.close();
         return user;
     }
+    public User getUserByEmail(String email) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        User user = null;
 
+        String[] columns = {COLUMN_ID, COLUMN_USERNAME, COLUMN_EMAIL, COLUMN_ROLE, COLUMN_IMAGE, COLUMN_IS_EMAIL_VERIFIED};
+        Cursor cursor = db.query(TABLE_USERS, columns, COLUMN_EMAIL + "=?", new String[]{email},
+                null, null, null);
+
+        if (cursor.moveToFirst()) {
+            user = new User(
+                    cursor.getInt(0),
+                    cursor.getString(1),
+                    "", // Không có password
+                    cursor.getString(2),
+                    cursor.getString(3),
+                    cursor.getBlob(4),
+                    cursor.getInt(5) == 1
+            );
+        }
+        cursor.close();
+        return user;
+    }
     public User getUserByEmailAndPassword(String email, String password) {
         SQLiteDatabase db = this.getReadableDatabase();
         User user = null;
@@ -231,6 +259,46 @@ public class DBHelper extends SQLiteOpenHelper {
         }
         cursor.close();
         return user;
+    }
+    // Thêm phương thức getAllUsers
+    public List<User> getAllUsers() {
+        List<User> users = new ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = null;
+
+        try {
+            String[] columns = {COLUMN_ID, COLUMN_USERNAME, COLUMN_EMAIL, COLUMN_ROLE, COLUMN_IMAGE, COLUMN_IS_EMAIL_VERIFIED};
+            cursor = db.query(TABLE_USERS, columns, null, null, null, null, null);
+
+            Log.d(TAG, "getAllUsers: Total rows = " + (cursor != null ? cursor.getCount() : 0));
+
+            if (cursor != null && cursor.moveToFirst()) {
+                do {
+                    User user = new User(
+                            cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_ID)),
+                            cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_USERNAME)),
+                            "", // Không có password trong bảng
+                            cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_EMAIL)),
+                            cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ROLE)),
+                            cursor.getBlob(cursor.getColumnIndexOrThrow(COLUMN_IMAGE)),
+                            cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_IS_EMAIL_VERIFIED)) == 1
+                    );
+                    users.add(user);
+                    Log.d(TAG, "getAllUsers: Added user - " + user.getUsername());
+                } while (cursor.moveToNext());
+            } else {
+                Log.d(TAG, "getAllUsers: No users found in database");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting all users: " + e.getMessage());
+        } finally {
+            if (cursor != null && !cursor.isClosed()) {
+                cursor.close();
+            }
+        }
+
+        Log.d(TAG, "getAllUsers: Total users retrieved = " + users.size());
+        return users;
     }
 
     public boolean updateUserPassword(String email, String newPassword) {

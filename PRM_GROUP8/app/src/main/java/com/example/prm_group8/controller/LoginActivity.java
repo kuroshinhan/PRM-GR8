@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
+import android.util.Patterns;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -11,12 +12,20 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.prm_group8.DBHelper;
 import com.example.prm_group8.R;
 import com.example.prm_group8.model.User;
 import com.example.prm_group8.controller.ForgotPasswordActivity;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.AuthResult;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import android.database.Cursor; // Thêm import này
+import android.database.sqlite.SQLiteDatabase; // Đã thêm trước đó
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -31,23 +40,28 @@ public class LoginActivity extends AppCompatActivity {
     private TextView forgotPassTextView;
     private CheckBox remember;
     private SharedPreferences sharedPreferences;
+    private FirebaseAuth mAuth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
+
         sharedPreferences = getSharedPreferences("MyPrefs", MODE_PRIVATE);
-        initializeViews();
+        mAuth = FirebaseAuth.getInstance();
         dbHelper = new DBHelper(this);
 
-        String name = sharedPreferences.getString("email", "");
-        String Pass = sharedPreferences.getString("password", "");
+        initializeViews();
 
-        emailEditText.setText(name);
-        passwordEditText.setText(Pass);
-        if(name.length()!=0&&Pass.length()!=0){
+        String savedEmail = sharedPreferences.getString("email", "");
+        String savedPassword = sharedPreferences.getString("password", "");
+
+        emailEditText.setText(savedEmail);
+        passwordEditText.setText(savedPassword);
+        if (!savedEmail.isEmpty() && !savedPassword.isEmpty()) {
             remember.setChecked(true);
         }
+
         loginButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -62,7 +76,8 @@ public class LoginActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
-        forgotPassTextView.setOnClickListener(new View.OnClickListener() { // Add this listener
+
+        forgotPassTextView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Intent intent = new Intent(LoginActivity.this, ForgotPasswordActivity.class);
@@ -81,81 +96,97 @@ public class LoginActivity extends AppCompatActivity {
             forgotPassTextView = findViewById(R.id.forgotPass);
             remember = findViewById(R.id.remember);
 
-            // Thêm kiểm tra null
-            if (signUpTextView == null) {
-                Log.e(TAG, "signUpTextView is null - check R.id.textView");
+            if (emailEditText == null || passwordEditText == null || loginButton == null ||
+                    signUpTextView == null || forgotPassTextView == null || remember == null) {
+                throw new IllegalStateException("Một hoặc nhiều view không được tìm thấy trong layout");
             }
-            if (forgotPassTextView == null) {
-                Log.e(TAG, "forgotPassTextView is null - check R.id.forgotPass");
-            }
-
         } catch (Exception e) {
-            Log.e(TAG, "Error initializing views", e);
-            throw e;
+            Log.e(TAG, "Lỗi khởi tạo view: " + e.getMessage());
+            Toast.makeText(this, "Lỗi khởi tạo giao diện: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            finish();
         }
     }
 
     private void performLogin() {
         SharedPreferences.Editor editor = sharedPreferences.edit();
 
-        String email = emailEditText.getText().toString().trim();
+        String input = emailEditText.getText().toString().trim(); // Có thể là email hoặc tên người dùng
         String password = passwordEditText.getText().toString().trim();
 
-        if (email.isEmpty() || password.isEmpty()) {
-            Toast.makeText(this, "Vui lòng nhập cả email và mật khẩu", Toast.LENGTH_SHORT).show();
+        if (input.isEmpty() || password.isEmpty()) {
+            Toast.makeText(this, "Vui lòng nhập cả email/tên người dùng và mật khẩu", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        try {
-            Log.d(TAG, "Login button clicked, Email: " + email);
-            User user = dbHelper.getUserByEmailAndPassword(email, password);
-            Log.d(TAG, "User found: " + (user != null));
-
-            if (user != null && user.getRole() != null) {
-           //     if (!user.isEmailVerified()) {
-             //       Toast.makeText(this, "Please verify your email before logging in", Toast.LENGTH_SHORT).show();
-               //     return;
-                //}
-
-                Log.d(TAG, "User role: " + user.getRole());
-                if ("user".equalsIgnoreCase(user.getRole())) {
-                    Toast.makeText(this, "Đăng nhập thành công với tư cách là người dùng", Toast.LENGTH_SHORT).show();
-                    Intent intent = new Intent(this, HomeUser.class);
-                    intent.putExtra(EXTRA_USER_ID, user.getId());
-                    if (remember.isChecked()) {
-                        editor.putString("email", email);
-                        editor.putString("password", password);
-                        editor.apply();
-                    } else {
-                        editor.clear();
-                        editor.apply();
-                    }
-                    startActivity(intent);
-                } else if ("admin".equalsIgnoreCase(user.getRole())) {
-                    Toast.makeText(this, "Đăng nhập thành công với tư cách Quản trị viên", Toast.LENGTH_SHORT).show();
-                    Intent intent = new Intent(this, HomeAdminActivity.class);
-                    intent.putExtra(EXTRA_USER_ID, user.getId());
-                    if (remember.isChecked()) {
-                        editor.putString("email", email);
-                        editor.putString("password", password);
-                        editor.apply();
-                    } else {
-                        editor.clear();
-                        editor.apply();
-                    }
-                    startActivity(intent);
-                } else {
-                    Toast.makeText(this, "Vai trò người dùng không hợp lệ", Toast.LENGTH_SHORT).show();
-                }
-            } else {
-                editor.clear();
-                editor.apply();
-                Toast.makeText(this, "Email hoặc mật khẩu không hợp lệ", Toast.LENGTH_SHORT).show();
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Lỗi khi đăng nhập", e);
-            Toast.makeText(this, "Lỗi đăng nhập: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        // Kiểm tra xem input là email hay tên người dùng
+        String email;
+        if (input.equalsIgnoreCase("admin")) {
+            email = "han171023fpt@gmail.com"; // Ánh xạ "admin" sang email
+        } else if (!Patterns.EMAIL_ADDRESS.matcher(input).matches()) {
+            Toast.makeText(this, "Địa chỉ email hoặc tên người dùng không hợp lệ", Toast.LENGTH_SHORT).show();
+            return;
+        } else {
+            email = input;
         }
+
+        mAuth.signInWithEmailAndPassword(email, password)
+                .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
+                    @Override
+                    public void onComplete(@NonNull Task<AuthResult> task) {
+                        if (task.isSuccessful()) {
+                            FirebaseUser user = mAuth.getCurrentUser();
+                            if (user != null && user.isEmailVerified()) {
+                                User localUser = dbHelper.getUserByEmail(email);
+                                if (localUser != null) {
+                                    Log.d(TAG, "User role: " + localUser.getRole());
+                                    if ("user".equalsIgnoreCase(localUser.getRole())) {
+                                        Toast.makeText(LoginActivity.this, "Đăng nhập thành công với tư cách là người dùng", Toast.LENGTH_SHORT).show();
+                                        Intent intent = new Intent(LoginActivity.this, HomeUser.class);
+                                        intent.putExtra(EXTRA_USER_ID, localUser.getId());
+                                        if (remember.isChecked()) {
+                                            editor.putString("email", email);
+                                            editor.putString("password", password);
+                                            editor.apply();
+                                        } else {
+                                            editor.clear();
+                                            editor.apply();
+                                        }
+                                        startActivity(intent);
+                                    } else if ("admin".equalsIgnoreCase(localUser.getRole())) {
+                                        Toast.makeText(LoginActivity.this, "Đăng nhập thành công với tư cách Quản trị viên", Toast.LENGTH_SHORT).show();
+                                        Intent intent = new Intent(LoginActivity.this, HomeAdminActivity.class);
+                                        intent.putExtra(EXTRA_USER_ID, localUser.getId());
+                                        if (remember.isChecked()) {
+                                            editor.putString("email", email);
+                                            editor.putString("password", password);
+                                            editor.apply();
+                                        } else {
+                                            editor.clear();
+                                            editor.apply();
+                                        }
+                                        startActivity(intent);
+                                    } else {
+                                        Toast.makeText(LoginActivity.this, "Vai trò người dùng không hợp lệ", Toast.LENGTH_SHORT).show();
+                                    }
+                                } else {
+                                    Toast.makeText(LoginActivity.this, "Thông tin người dùng không tìm thấy trong cơ sở dữ liệu cục bộ", Toast.LENGTH_SHORT).show();
+                                }
+                            } else {
+                                Toast.makeText(LoginActivity.this, "Vui lòng xác minh email trước khi đăng nhập.", Toast.LENGTH_LONG).show();
+                            }
+                        } else {
+                            editor.clear();
+                            editor.apply();
+                            Toast.makeText(LoginActivity.this, "Tài khoản hoặc mật khẩu không hợp lệ: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
+                            Log.e(TAG, "Login failed: " + task.getException().getMessage());
+                        }
+                    }
+                });
+    }
+    // Phương thức để ánh xạ email sang id (sử dụng DBHelper)
+    private int getUserIdFromEmail(String email) {
+        User user = dbHelper.getUserByEmail(email);
+        return (user != null) ? user.getId() : -1;
     }
 
     @Override

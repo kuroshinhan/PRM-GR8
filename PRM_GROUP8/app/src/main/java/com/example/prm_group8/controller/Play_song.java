@@ -37,8 +37,8 @@ public class Play_song extends AppCompatActivity {
     private boolean isFavorite = false;
 
     private List<Song> playlist;
-    private int currentSongIndex;
-    private int userId;
+    private int currentSongIndex = -1;
+    private int userId = -1;
     private DBHelper dbHelper;
 
     @Override
@@ -63,25 +63,27 @@ public class Play_song extends AppCompatActivity {
         previousBtn = findViewById(R.id.previous);
         musicIcon = findViewById(R.id.music_icon_big);
         btnBack = findViewById(R.id.btn_back);
-        favoriteButton = findViewById(R.id.favoriteButton); // Khởi tạo nút yêu thích
+        favoriteButton = findViewById(R.id.favoriteButton);
 
-        pausePlay.setImageResource(R.drawable.baseline_play_circle_outline_24);
+        if (pausePlay != null) {
+            pausePlay.setImageResource(R.drawable.baseline_play_circle_outline_24);
+        }
     }
 
     private void setupClickListeners() {
-        btnBack.setOnClickListener(v -> onBackPressed());
-        nextBtn.setOnClickListener(v -> playNextSong());
-        previousBtn.setOnClickListener(v -> playPreviousSong());
-        pausePlay.setOnClickListener(v -> togglePlayPause());
-        favoriteButton.setOnClickListener(v -> toggleFavorite()); // Thêm sự kiện cho nút yêu thích
+        if (btnBack != null) btnBack.setOnClickListener(v -> onBackPressed());
+        if (nextBtn != null) nextBtn.setOnClickListener(v -> playNextSong());
+        if (previousBtn != null) previousBtn.setOnClickListener(v -> playPreviousSong());
+        if (pausePlay != null) pausePlay.setOnClickListener(v -> togglePlayPause());
+        if (favoriteButton != null) favoriteButton.setOnClickListener(v -> toggleFavorite());
     }
 
     private void getIntentData() {
         currentSongIndex = getIntent().getIntExtra("position", -1);
         userId = getIntent().getIntExtra("USER_ID", -1);
 
-        if (currentSongIndex == -1 || userId == -1) {
-            Log.e(TAG, "Invalid song position or user ID");
+        if (currentSongIndex < 0 || userId < 0) {
+            Log.e(TAG, "Invalid song position or user ID: position=" + currentSongIndex + ", userId=" + userId);
             Toast.makeText(this, "Error: Invalid data", Toast.LENGTH_SHORT).show();
             finish();
             return;
@@ -89,26 +91,23 @@ public class Play_song extends AppCompatActivity {
 
         loadPlaylist();
     }
+
     private void playNextSong() {
-        if (currentSongIndex < playlist.size() - 1) {
-            currentSongIndex++;
-        } else {
-            currentSongIndex = 0;
-        }
+        if (playlist == null || playlist.isEmpty()) return;
+        currentSongIndex = (currentSongIndex + 1) % playlist.size();
         playSong();
     }
+
     private void playPreviousSong() {
-        if (currentSongIndex > 0) {
-            currentSongIndex--;
-        } else {
-            currentSongIndex = playlist.size() - 1;
-        }
+        if (playlist == null || playlist.isEmpty()) return;
+        currentSongIndex = (currentSongIndex - 1 + playlist.size()) % playlist.size();
         playSong();
     }
+
     private void loadPlaylist() {
         playlist = dbHelper.getAllSongs();
         if (playlist == null || playlist.isEmpty() || currentSongIndex >= playlist.size()) {
-            Log.e(TAG, "Invalid playlist data or index");
+            Log.e(TAG, "Invalid playlist data or index: size=" + (playlist != null ? playlist.size() : 0) + ", index=" + currentSongIndex);
             Toast.makeText(this, "Error: Invalid playlist data", Toast.LENGTH_SHORT).show();
             finish();
             return;
@@ -121,35 +120,52 @@ public class Play_song extends AppCompatActivity {
         if (mediaPlayer != null) {
             mediaPlayer.stop();
             mediaPlayer.release();
+            mediaPlayer = null;
+        }
+
+        if (playlist == null || currentSongIndex < 0 || currentSongIndex >= playlist.size()) {
+            Log.e(TAG, "Invalid song index: " + currentSongIndex);
+            return;
         }
 
         Song song = playlist.get(currentSongIndex);
+        if (song == null) {
+            Log.e(TAG, "Song at index " + currentSongIndex + " is null");
+            return;
+        }
+
         updateSongInfo(song);
         setupMediaPlayer(song);
-        updateFavoriteStatus(); // Cập nhật trạng thái yêu thích
+        updateFavoriteStatus();
     }
 
     private void updateSongInfo(Song song) {
-        titleTv.setText(song.getTitle());
-        artistTv.setText(song.getArtist());
-        updateMusicIcon(song);
+        runOnUiThread(() -> {
+            if (titleTv != null) titleTv.setText(song.getTitle());
+            if (artistTv != null) artistTv.setText(song.getArtist());
+            updateMusicIcon(song);
+        });
     }
 
     private void updateMusicIcon(Song song) {
-        byte[] imageData = song.getImage();
-        if (imageData != null && imageData.length > 0) {
-            try {
-                Bitmap bitmap = BitmapFactory.decodeByteArray(imageData, 0, imageData.length);
-                RoundedBitmapDrawable roundedBitmapDrawable = RoundedBitmapDrawableFactory.create(getResources(), bitmap);
-                roundedBitmapDrawable.setCircular(true);
-                musicIcon.setImageDrawable(roundedBitmapDrawable);
-            } catch (Exception e) {
-                Log.e(TAG, "Error loading image", e);
-                musicIcon.setImageResource(R.drawable.default_song_image);
+        runOnUiThread(() -> {
+            if (musicIcon != null) {
+                byte[] imageData = song.getImage();
+                if (imageData != null && imageData.length > 0) {
+                    try {
+                        Bitmap bitmap = BitmapFactory.decodeByteArray(imageData, 0, imageData.length);
+                        RoundedBitmapDrawable roundedBitmapDrawable = RoundedBitmapDrawableFactory.create(getResources(), bitmap);
+                        roundedBitmapDrawable.setCircular(true);
+                        musicIcon.setImageDrawable(roundedBitmapDrawable);
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error loading image", e);
+                        musicIcon.setImageResource(R.drawable.default_song_image);
+                    }
+                } else {
+                    musicIcon.setImageResource(R.drawable.default_song_image);
+                }
             }
-        } else {
-            musicIcon.setImageResource(R.drawable.default_song_image);
-        }
+        });
     }
 
     private void setupMediaPlayer(Song song) {
@@ -166,89 +182,98 @@ public class Play_song extends AppCompatActivity {
             mediaPlayer.prepareAsync();
 
             mediaPlayer.setOnPreparedListener(mp -> {
-                totalTimeTv.setText(formatTime(mediaPlayer.getDuration()));
-                seekBar.setMax(mediaPlayer.getDuration());
+                if (totalTimeTv != null) totalTimeTv.setText(formatTime(mediaPlayer.getDuration()));
+                if (seekBar != null) seekBar.setMax(mediaPlayer.getDuration());
                 startPlayback();
             });
 
             mediaPlayer.setOnErrorListener((mp, what, extra) -> {
                 Log.e(TAG, "MediaPlayer error: " + what + ", " + extra);
-                Toast.makeText(Play_song.this, "Error playing audio", Toast.LENGTH_SHORT).show();
+                runOnUiThread(() -> Toast.makeText(Play_song.this, "Error playing audio", Toast.LENGTH_SHORT).show());
                 return false;
             });
 
             mediaPlayer.setOnCompletionListener(mp -> {
-                pausePlay.setImageResource(R.drawable.baseline_play_circle_outline_24);
-                stopUpdateSeekBarProgress();
-                isPlaying = false;
-                playNextSong();
+                runOnUiThread(() -> {
+                    if (pausePlay != null) pausePlay.setImageResource(R.drawable.baseline_play_circle_outline_24);
+                    stopUpdateSeekBarProgress();
+                    isPlaying = false;
+                    playNextSong();
+                });
             });
 
         } catch (IOException e) {
-            Log.e(TAG, "Error setting data source", e);
-            Toast.makeText(this, "Error playing song", Toast.LENGTH_SHORT).show();
+            Log.e(TAG, "Error setting data source for song: " + song.getTitle(), e);
+            runOnUiThread(() -> Toast.makeText(this, "Error playing song", Toast.LENGTH_SHORT).show());
         }
 
         setupSeekBar();
     }
 
     private void startPlayback() {
-        mediaPlayer.start();
-        isPlaying = true;
-        pausePlay.setImageResource(R.drawable.baseline_pause_circle_outline_24);
-        startUpdateSeekBarProgress();
+        if (mediaPlayer != null && !mediaPlayer.isPlaying()) {
+            mediaPlayer.start();
+            isPlaying = true;
+            runOnUiThread(() -> {
+                if (pausePlay != null) pausePlay.setImageResource(R.drawable.baseline_pause_circle_outline_24);
+                startUpdateSeekBarProgress();
+            });
+        }
     }
 
     private void setupSeekBar() {
-        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser ) {
-                if (fromUser && mediaPlayer != null) {
-                    mediaPlayer.seekTo(progress);
-                    currentTimeTv.setText(formatTime(progress));
+        if (seekBar != null) {
+            seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                @Override
+                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                    if (fromUser && mediaPlayer != null) {
+                        mediaPlayer.seekTo(progress);
+                        if (currentTimeTv != null) currentTimeTv.setText(formatTime(progress));
+                    }
                 }
-            }
 
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-                stopUpdateSeekBarProgress();
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-                if (mediaPlayer != null && mediaPlayer.isPlaying()) {
-                    startUpdateSeekBarProgress();
+                @Override
+                public void onStartTrackingTouch(SeekBar seekBar) {
+                    stopUpdateSeekBarProgress();
                 }
-            }
-        });
+
+                @Override
+                public void onStopTrackingTouch(SeekBar seekBar) {
+                    if (mediaPlayer != null && mediaPlayer.isPlaying()) {
+                        startUpdateSeekBarProgress();
+                    }
+                }
+            });
+        }
     }
 
     private void togglePlayPause() {
         if (mediaPlayer != null) {
             if (isPlaying) {
                 mediaPlayer.pause();
-                pausePlay.setImageResource(R.drawable.baseline_play_circle_outline_24);
-                stopUpdateSeekBarProgress();
+                runOnUiThread(() -> {
+                    if (pausePlay != null) pausePlay.setImageResource(R.drawable.baseline_play_circle_outline_24);
+                    stopUpdateSeekBarProgress();
+                });
             } else {
                 mediaPlayer.start();
-                pausePlay.setImageResource(R.drawable.baseline_pause_circle_outline_24);
-                startUpdateSeekBarProgress();
+                runOnUiThread(() -> {
+                    if (pausePlay != null) pausePlay.setImageResource(R.drawable.baseline_pause_circle_outline_24);
+                    startUpdateSeekBarProgress();
+                });
             }
             isPlaying = !isPlaying;
         }
     }
 
     private void startUpdateSeekBarProgress() {
-        updateSeekBarRunnable = new Runnable() {
-            @Override
-            public void run() {
-                if (mediaPlayer != null) {
-                    int currentPosition = mediaPlayer.getCurrentPosition();
-                    seekBar.setProgress(currentPosition);
-                    currentTimeTv.setText(formatTime(currentPosition));
-                }
-                handler.postDelayed(this, 1000);
+        updateSeekBarRunnable = () -> {
+            if (mediaPlayer != null && seekBar != null && currentTimeTv != null) {
+                int currentPosition = mediaPlayer.getCurrentPosition();
+                seekBar.setProgress(currentPosition);
+                currentTimeTv.setText(formatTime(currentPosition));
             }
+            handler.postDelayed(updateSeekBarRunnable, 1000);
         };
         handler.post(updateSeekBarRunnable);
     }
@@ -267,33 +292,42 @@ public class Play_song extends AppCompatActivity {
     }
 
     private void updateFavoriteStatus() {
-        Song currentSong = playlist.get(currentSongIndex);
-        isFavorite = dbHelper.isSongFavorite(userId, currentSong.getId());
-        updateFavoriteButton();
+        if (playlist != null && currentSongIndex >= 0 && currentSongIndex < playlist.size()) {
+            Song currentSong = playlist.get(currentSongIndex);
+            isFavorite = dbHelper.isSongFavorite(userId, currentSong.getId());
+            runOnUiThread(this::updateFavoriteButton);
+        }
     }
 
     private void updateFavoriteButton() {
-        favoriteButton.setImageResource(isFavorite ?
-                R.drawable.ic_favorite : R.drawable.ic_favorite_border);
+        if (favoriteButton != null) {
+            favoriteButton.setImageResource(isFavorite ?
+                    R.drawable.ic_favorite : R.drawable.ic_favorite_border);
+        }
     }
 
     private void toggleFavorite() {
-        Song currentSong = playlist.get(currentSongIndex);
-        if (isFavorite) {
-            dbHelper.removeFavoriteSong(userId, currentSong.getId());
-            Toast.makeText(this, "Removed from favorites", Toast.LENGTH_SHORT).show();
-        } else {
-            dbHelper.addFavoriteSong(userId, currentSong.getId());
-            Toast.makeText(this, "Added to favorites", Toast.LENGTH_SHORT).show();
+        if (playlist != null && currentSongIndex >= 0 && currentSongIndex < playlist.size()) {
+            Song currentSong = playlist.get(currentSongIndex);
+            if (isFavorite) {
+                if (dbHelper.removeFavoriteSong(userId, currentSong.getId())) {
+                    Toast.makeText(this, "Removed from favorites", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                if (dbHelper.addFavoriteSong(userId, currentSong.getId())) {
+                    Toast.makeText(this, "Added to favorites", Toast.LENGTH_SHORT).show();
+                }
+            }
+            isFavorite = !isFavorite;
+            updateFavoriteButton();
         }
-        isFavorite = !isFavorite;
-        updateFavoriteButton();
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
         if (mediaPlayer != null) {
+            mediaPlayer.stop();
             mediaPlayer.release();
             mediaPlayer = null;
         }

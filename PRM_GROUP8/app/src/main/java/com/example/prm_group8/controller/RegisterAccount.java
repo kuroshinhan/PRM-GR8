@@ -7,22 +7,33 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.prm_group8.DBHelper;
 import com.example.prm_group8.R;
 import com.example.prm_group8.model.User;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.AuthResult;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
 public class RegisterAccount extends AppCompatActivity {
 
     private EditText etUsername, etPassword, etConfirmPassword, etEmail;
     private Button btnRegister;
     private DBHelper dbHelper;
+    private FirebaseAuth mAuth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_register_account);
+
+        // Khởi tạo FirebaseAuth
+        mAuth = FirebaseAuth.getInstance();
 
         initializeViews();
         dbHelper = new DBHelper(this);
@@ -57,26 +68,58 @@ public class RegisterAccount extends AppCompatActivity {
         if (validateInput(username, password, confirmPassword, email)) {
             String role = "user";
 
-            boolean success = dbHelper.addUser(username, password, email, role, null);
-
-            if (success) {
-                Toast.makeText(this, "Đăng ký thành công", Toast.LENGTH_SHORT).show();
-                loginUser(email, password);
-            } else {
-                Toast.makeText(this, "Đăng ký không thành công", Toast.LENGTH_SHORT).show();
-            }
+            mAuth.createUserWithEmailAndPassword(email, password)
+                    .addOnCompleteListener(new OnCompleteListener<AuthResult>() {
+                        @Override
+                        public void onComplete(@NonNull Task<AuthResult> task) {
+                            if (task.isSuccessful()) {
+                                FirebaseUser user = mAuth.getCurrentUser();
+                                if (user != null) {
+                                    user.sendEmailVerification()
+                                            .addOnCompleteListener(new OnCompleteListener<Void>() {
+                                                @Override
+                                                public void onComplete(@NonNull Task<Void> task) {
+                                                    if (task.isSuccessful()) {
+                                                        // Lưu thông tin vào DBHelper (không cần password)
+                                                        dbHelper.addUser(username, email, role, null);
+                                                        dbHelper.syncEmailVerificationStatus(email, user.isEmailVerified());
+                                                        Toast.makeText(RegisterAccount.this,
+                                                                "Đăng ký thành công. Vui lòng kiểm tra email để xác minh.",
+                                                                Toast.LENGTH_LONG).show();
+                                                        backToLogin();
+                                                    } else {
+                                                        Toast.makeText(RegisterAccount.this,
+                                                                "Gửi email xác minh thất bại: " + task.getException().getMessage(),
+                                                                Toast.LENGTH_LONG).show();
+                                                    }
+                                                }
+                                            });
+                                }
+                            } else {
+                                Toast.makeText(RegisterAccount.this,
+                                        "Đăng ký thất bại: " + task.getException().getMessage(),
+                                        Toast.LENGTH_LONG).show();
+                            }
+                        }
+                    });
         }
     }
 
     private void loginUser(String email, String password) {
-        User user = dbHelper.getUserByEmailAndPassword(email, password);
-        if (user != null) {
-            Intent intent = new Intent(this, HomeUser.class);
-            intent.putExtra("USER_ID", user.getId());
-            startActivity(intent);
-            finish();
+        // Kiểm tra trạng thái xác minh email trước khi đăng nhập
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        if (currentUser != null && currentUser.isEmailVerified()) {
+            User user = dbHelper.getUserByEmailAndPassword(email, password);
+            if (user != null) {
+                Intent intent = new Intent(this, HomeUser.class);
+                intent.putExtra("USER_ID", user.getId());
+                startActivity(intent);
+                finish();
+            } else {
+                backToLogin();
+            }
         } else {
-            backToLogin();
+            Toast.makeText(this, "Vui lòng xác minh email trước khi đăng nhập.", Toast.LENGTH_LONG).show();
         }
     }
 

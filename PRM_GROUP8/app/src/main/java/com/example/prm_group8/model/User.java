@@ -9,6 +9,9 @@ public class User {
     private byte[] image;
     private boolean isEmailVerified;
 
+    public User() {
+        this.isEmailVerified = false; // Default value
+    }
     // Constructor đầy đủ
     public User(int id, String username, String password, String email, String role, byte[] image, boolean isEmailVerified) {
         this.id = id;
