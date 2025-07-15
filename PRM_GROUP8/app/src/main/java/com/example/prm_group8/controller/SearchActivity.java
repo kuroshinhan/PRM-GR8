@@ -1,4 +1,4 @@
-package com.example.prm_group8;
+package com.example.prm_group8.controller;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -16,9 +16,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.prm_group8.SongAdapter;
-import com.example.prm_group8.controller.HomeUser;
-import com.example.prm_group8.controller.Play_song;
+import com.example.prm_group8.R;
+import com.example.prm_group8.adapter.SongAdapter;
+import com.example.prm_group8.database.DBHelper;
 import com.example.prm_group8.model.Song;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
@@ -52,9 +52,9 @@ public class SearchActivity extends AppCompatActivity implements SongAdapter.OnS
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         // Khởi tạo danh sách bài hát
-        dbHelper = new DBHelper(this); // Khởi tạo DBHelper ở đây
-        songList = getSongList(); // Lấy danh sách bài hát từ DBHelper
-        filteredSongs = new ArrayList<>(songList); // Khởi tạo danh sách tìm kiếm
+        dbHelper = new DBHelper(this);
+        songList = getSongList();
+        filteredSongs = new ArrayList<>(songList);
 
         // Khởi tạo và thiết lập adapter
         songAdapter = new SongAdapter(filteredSongs, this);
@@ -81,10 +81,10 @@ public class SearchActivity extends AppCompatActivity implements SongAdapter.OnS
                     (keyEvent != null && keyEvent.getAction() == KeyEvent.ACTION_DOWN && keyEvent.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
 
                 String query = searchEditText.getText().toString();
-                filterSongs(query); // Gọi phương thức tìm kiếm
+                filterSongs(query);
 
-                hideKeyboard(); // Ẩn bàn phím sau khi nhấn OK
-                return true; // Ngăn chặn hành động mặc định (xuống dòng)
+                hideKeyboard();
+                return true;
             }
             return false;
         });
@@ -143,9 +143,9 @@ public class SearchActivity extends AppCompatActivity implements SongAdapter.OnS
 
     @Override
     public void onSongClick(Song song) {
-        Intent intent = new Intent(this, Play_song.class); // Thay "Play_song.class" bằng lớp phát nhạc của bạn
-        intent.putExtra("position", songList.indexOf(song)); // Truyền vị trí của bài hát trong danh sách
-        intent.putExtra("USER_ID", userId); // Nếu bạn cần truyền ID người dùng
+        Intent intent = new Intent(this, Play_song.class);
+        intent.putExtra("position", songList.indexOf(song));
+        intent.putExtra("USER_ID", userId);
         startActivity(intent);
     }
 

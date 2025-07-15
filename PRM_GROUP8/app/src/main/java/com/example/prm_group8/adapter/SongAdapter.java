@@ -1,4 +1,4 @@
-package com.example.prm_group8;
+package com.example.prm_group8.adapter;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -11,6 +11,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.prm_group8.R;
 import com.example.prm_group8.model.Song;
 
 import java.util.List;

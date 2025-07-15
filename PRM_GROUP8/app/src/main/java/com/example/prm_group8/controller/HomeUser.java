@@ -13,12 +13,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.prm_group8.DBHelper;
-import com.example.prm_group8.ListeningHistoryActivity;
-import com.example.prm_group8.PlaylistAdapter;
+import com.example.prm_group8.database.DBHelper;
+import com.example.prm_group8.adapter.PlaylistAdapter;
 import com.example.prm_group8.R;
-import com.example.prm_group8.SearchActivity;
-import com.example.prm_group8.UserActivity;
 import com.example.prm_group8.model.Song;
 import com.example.prm_group8.model.User;
 import com.google.android.material.bottomnavigation.BottomNavigationView;

@@ -1,12 +1,14 @@
-package com.example.prm_group8;
+package com.example.prm_group8.controller;
 
 import android.os.Bundle;
-import android.view.View;
 import android.widget.ImageButton;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.prm_group8.R;
+import com.example.prm_group8.adapter.ListeningHistoryAdapter;
+import com.example.prm_group8.database.DBHelper;
 import com.example.prm_group8.model.Song;
 
 import java.util.ArrayList;

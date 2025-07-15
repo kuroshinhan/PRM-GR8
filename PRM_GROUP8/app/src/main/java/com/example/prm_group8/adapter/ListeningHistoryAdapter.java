@@ -1,4 +1,4 @@
-package com.example.prm_group8;
+package com.example.prm_group8.adapter;
 
 import android.content.Context;
 import android.content.Intent;
@@ -14,6 +14,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.prm_group8.R;
 import com.example.prm_group8.controller.Play_song;
 import com.example.prm_group8.model.Song;
 

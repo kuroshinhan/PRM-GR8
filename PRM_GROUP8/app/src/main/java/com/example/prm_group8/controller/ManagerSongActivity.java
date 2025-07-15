@@ -16,9 +16,9 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.prm_group8.DBHelper;
+import com.example.prm_group8.database.DBHelper;
 import com.example.prm_group8.R;
-import com.example.prm_group8.SongAdapter;
+import com.example.prm_group8.adapter.SongAdapter;
 import com.example.prm_group8.model.Song;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 

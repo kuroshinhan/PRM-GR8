@@ -55,8 +55,8 @@
 
     <ImageView
         android:id="@+id/icon_noti"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
+        android:layout_width="34dp"
+        android:layout_height="33dp"
         android:layout_marginTop="16dp"
         android:layout_marginEnd="16dp"
         android:src="@drawable/icon_noti"
@@ -80,7 +80,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:scaleType="centerCrop"
-            android:src="@mipmap/logomusic2" />
+            android:src="@mipmap/logomusic" />
     </androidx.cardview.widget.CardView>
 
     <!-- FrameLayout chứa nội dung chính -->

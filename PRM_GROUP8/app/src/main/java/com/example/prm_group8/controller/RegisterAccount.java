@@ -11,7 +11,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.example.prm_group8.DBHelper;
+import com.example.prm_group8.database.DBHelper;
 import com.example.prm_group8.R;
 import com.example.prm_group8.model.User;
 import com.google.android.gms.tasks.OnCompleteListener;

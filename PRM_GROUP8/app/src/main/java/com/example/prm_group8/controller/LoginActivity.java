@@ -15,17 +15,14 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.example.prm_group8.DBHelper;
+import com.example.prm_group8.database.DBHelper;
 import com.example.prm_group8.R;
 import com.example.prm_group8.model.User;
-import com.example.prm_group8.controller.ForgotPasswordActivity;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import android.database.Cursor; // Thêm import này
-import android.database.sqlite.SQLiteDatabase; // Đã thêm trước đó
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -107,10 +104,33 @@ public class LoginActivity extends AppCompatActivity {
         }
     }
 
+    private void createUserInLocalDatabase(FirebaseUser firebaseUser, String email) {
+        try {
+            if (!dbHelper.isEmailExists(email)) {
+                String username = firebaseUser.getDisplayName() != null ? firebaseUser.getDisplayName() : "User";
+                String role = email.equals("han171023fpt@gmail.com") ? "admin" : "user";
+
+                boolean success = dbHelper.addUser(username, email, role, null);
+                if (success) {
+                    Log.d(TAG, "User created in local database for email: " + email);
+                    dbHelper.syncEmailVerificationStatus(email, firebaseUser.isEmailVerified());
+                } else {
+                    Log.e(TAG, "Failed to add user to local database for email: " + email);
+                    Toast.makeText(this, "Lỗi tạo user trong cơ sở dữ liệu cục bộ", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                Log.d(TAG, "User already exists in local database for email: " + email);
+                // Cập nhật trạng thái verified nếu cần
+                dbHelper.syncEmailVerificationStatus(email, firebaseUser.isEmailVerified());
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating user in local database: " + e.getMessage());
+            Toast.makeText(this, "Lỗi tạo user: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
     private void performLogin() {
         SharedPreferences.Editor editor = sharedPreferences.edit();
-
-        String input = emailEditText.getText().toString().trim(); // Có thể là email hoặc tên người dùng
+        String input = emailEditText.getText().toString().trim();
         String password = passwordEditText.getText().toString().trim();
 
         if (input.isEmpty() || password.isEmpty()) {
@@ -118,10 +138,9 @@ public class LoginActivity extends AppCompatActivity {
             return;
         }
 
-        // Kiểm tra xem input là email hay tên người dùng
         String email;
         if (input.equalsIgnoreCase("admin")) {
-            email = "han171023fpt@gmail.com"; // Ánh xạ "admin" sang email
+            email = "han171023fpt@gmail.com";
         } else if (!Patterns.EMAIL_ADDRESS.matcher(input).matches()) {
             Toast.makeText(this, "Địa chỉ email hoặc tên người dùng không hợp lệ", Toast.LENGTH_SHORT).show();
             return;
@@ -129,60 +148,70 @@ public class LoginActivity extends AppCompatActivity {
             email = input;
         }
 
+        Log.d(TAG, "Attempting login with email: " + email);
         mAuth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         if (task.isSuccessful()) {
                             FirebaseUser user = mAuth.getCurrentUser();
+                            Log.d(TAG, "Firebase login successful, user: " + (user != null ? user.getEmail() : "null"));
                             if (user != null && user.isEmailVerified()) {
                                 User localUser = dbHelper.getUserByEmail(email);
+                                Log.d(TAG, "Local user found: " + (localUser != null ? localUser.getEmail() : "null"));
+
+                                if (localUser == null) {
+                                    Log.d(TAG, "Creating new user in local database for: " + email);
+                                    createUserInLocalDatabase(user, email);
+                                    localUser = dbHelper.getUserByEmail(email); // Lấy lại sau khi tạo
+                                }
+
                                 if (localUser != null) {
+                                    dbHelper.syncEmailVerificationStatus(email, user.isEmailVerified());
                                     Log.d(TAG, "User role: " + localUser.getRole());
-                                    if ("user".equalsIgnoreCase(localUser.getRole())) {
-                                        Toast.makeText(LoginActivity.this, "Đăng nhập thành công với tư cách là người dùng", Toast.LENGTH_SHORT).show();
-                                        Intent intent = new Intent(LoginActivity.this, HomeUser.class);
-                                        intent.putExtra(EXTRA_USER_ID, localUser.getId());
-                                        if (remember.isChecked()) {
-                                            editor.putString("email", email);
-                                            editor.putString("password", password);
-                                            editor.apply();
-                                        } else {
-                                            editor.clear();
-                                            editor.apply();
-                                        }
-                                        startActivity(intent);
-                                    } else if ("admin".equalsIgnoreCase(localUser.getRole())) {
-                                        Toast.makeText(LoginActivity.this, "Đăng nhập thành công với tư cách Quản trị viên", Toast.LENGTH_SHORT).show();
-                                        Intent intent = new Intent(LoginActivity.this, HomeAdminActivity.class);
-                                        intent.putExtra(EXTRA_USER_ID, localUser.getId());
-                                        if (remember.isChecked()) {
-                                            editor.putString("email", email);
-                                            editor.putString("password", password);
-                                            editor.apply();
-                                        } else {
-                                            editor.clear();
-                                            editor.apply();
-                                        }
-                                        startActivity(intent);
+                                    Intent intent;
+                                    String message;
+
+                                    if ("admin".equalsIgnoreCase(localUser.getRole())) {
+                                        intent = new Intent(LoginActivity.this, HomeAdminActivity.class);
+                                        message = "Đăng nhập thành công với tư cách Quản trị viên";
                                     } else {
-                                        Toast.makeText(LoginActivity.this, "Vai trò người dùng không hợp lệ", Toast.LENGTH_SHORT).show();
+                                        intent = new Intent(LoginActivity.this, HomeUser.class);
+                                        message = "Đăng nhập thành công với tư cách là người dùng";
                                     }
+
+                                    Toast.makeText(LoginActivity.this, message, Toast.LENGTH_SHORT).show();
+                                    intent.putExtra(EXTRA_USER_ID, localUser.getId());
+
+                                    if (remember.isChecked()) {
+                                        editor.putString("email", email);
+                                        editor.apply();
+                                    } else {
+                                        editor.clear();
+                                        editor.apply();
+                                    }
+
+                                    startActivity(intent);
+                                    finish();
                                 } else {
-                                    Toast.makeText(LoginActivity.this, "Thông tin người dùng không tìm thấy trong cơ sở dữ liệu cục bộ", Toast.LENGTH_SHORT).show();
+                                    Toast.makeText(LoginActivity.this, "Lỗi tạo thông tin người dùng", Toast.LENGTH_SHORT).show();
+                                    Log.e(TAG, "Local user is null after creation attempt for email: " + email);
                                 }
                             } else {
                                 Toast.makeText(LoginActivity.this, "Vui lòng xác minh email trước khi đăng nhập.", Toast.LENGTH_LONG).show();
+                                Log.w(TAG, "Email not verified for: " + email);
                             }
                         } else {
                             editor.clear();
                             editor.apply();
-                            Toast.makeText(LoginActivity.this, "Tài khoản hoặc mật khẩu không hợp lệ: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
-                            Log.e(TAG, "Login failed: " + task.getException().getMessage());
+                            String errorMessage = task.getException() != null ? task.getException().getMessage() : "Unknown error";
+                            Toast.makeText(LoginActivity.this, "Tài khoản hoặc mật khẩu không hợp lệ: " + errorMessage, Toast.LENGTH_LONG).show();
+                            Log.e(TAG, "Login failed: " + errorMessage);
                         }
                     }
                 });
     }
+
     // Phương thức để ánh xạ email sang id (sử dụng DBHelper)
     private int getUserIdFromEmail(String email) {
         User user = dbHelper.getUserByEmail(email);

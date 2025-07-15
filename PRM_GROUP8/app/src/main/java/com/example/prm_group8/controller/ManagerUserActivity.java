@@ -1,7 +1,6 @@
 package com.example.prm_group8.controller;
 
 import android.content.Intent;
-import android.database.Cursor;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -12,9 +11,9 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.prm_group8.DBHelper;
+import com.example.prm_group8.database.DBHelper;
 import com.example.prm_group8.R;
-import com.example.prm_group8.UserAdapter;
+import com.example.prm_group8.adapter.UserAdapter;
 import com.example.prm_group8.model.User;
 
 import java.util.ArrayList;
@@ -42,7 +41,7 @@ public class ManagerUserActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
-        userRecyclerView = findViewById(R.id.songRecyclerView); // Lưu ý: Có thể cần sửa thành userRecyclerView
+        userRecyclerView = findViewById(R.id.songRecyclerView);
         dbHelper = new DBHelper(this);
         setupRecyclerView();
         loadUserData();
@@ -78,7 +77,7 @@ public class ManagerUserActivity extends AppCompatActivity {
     private List<User> fetchUsersFromDatabase() {
         List<User> users = new ArrayList<>();
         try {
-            users = dbHelper.getAllUsers(); // Sử dụng getAllUsers() thay vì getUserDetails()
+            users = dbHelper.getAllUsers();
             Log.d(TAG, "Users retrieved from database: " + (users != null ? users.size() : "null"));
         } catch (Exception e) {
             Log.e(TAG, "Error loading user data", e);

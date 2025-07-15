@@ -1,14 +1,10 @@
-package com.example.prm_group8;
+package com.example.prm_group8.controller;
 
-import android.content.Context;
 import android.os.Bundle;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
-import com.example.prm_group8.DBHelper;
+
+import com.example.prm_group8.R;
 
 
 public class MainActivity extends AppCompatActivity {

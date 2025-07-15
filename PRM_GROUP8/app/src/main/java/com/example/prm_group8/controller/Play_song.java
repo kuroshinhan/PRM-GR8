@@ -16,7 +16,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.drawable.RoundedBitmapDrawable;
 import androidx.core.graphics.drawable.RoundedBitmapDrawableFactory;
 
-import com.example.prm_group8.DBHelper;
+import com.example.prm_group8.database.DBHelper;
 import com.example.prm_group8.R;
 import com.example.prm_group8.model.Song;
 

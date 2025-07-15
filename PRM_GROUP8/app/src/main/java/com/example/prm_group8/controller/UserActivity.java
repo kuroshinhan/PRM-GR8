@@ -1,4 +1,4 @@
-package com.example.prm_group8;
+package com.example.prm_group8.controller;
 
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -15,7 +15,8 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.example.prm_group8.controller.HomeUser;
+import com.example.prm_group8.R;
+import com.example.prm_group8.database.DBHelper;
 import com.example.prm_group8.model.User;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 

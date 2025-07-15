@@ -25,7 +25,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:scaleType="centerCrop"
-            android:src="@mipmap/logomusic2" />
+            android:src="@mipmap/logomusic" />
     </androidx.cardview.widget.CardView>
 
     <Button

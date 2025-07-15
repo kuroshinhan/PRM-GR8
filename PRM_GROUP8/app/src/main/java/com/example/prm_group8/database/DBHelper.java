@@ -1,4 +1,4 @@
-package com.example.prm_group8;
+package com.example.prm_group8.database;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -9,17 +9,17 @@ import android.util.Log;
 
 import com.example.prm_group8.model.Song;
 import com.example.prm_group8.model.User;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import android.database.SQLException;
 
 public class DBHelper extends SQLiteOpenHelper {
 
     private static final String TAG = "DBHelper";
     private static final String DATABASE_NAME = "prm_group8.db";
-    private static final int DATABASE_VERSION = 5;
+    private static final int DATABASE_VERSION = 6;
 
     private static final String TABLE_USERS = "users";
     private static final String TABLE_SONGS = "songs";
@@ -30,7 +30,6 @@ public class DBHelper extends SQLiteOpenHelper {
     // Columns for Users
     public static final String COLUMN_ID = "id";
     public static final String COLUMN_USERNAME = "username";
-    public static final String COLUMN_PASSWORD = "password";
     public static final String COLUMN_EMAIL = "email";
     public static final String COLUMN_ROLE = "role";
     public static final String COLUMN_IMAGE = "image";
@@ -69,7 +68,6 @@ public class DBHelper extends SQLiteOpenHelper {
         String createUsersTable = "CREATE TABLE " + TABLE_USERS + "("
                 + COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
                 + COLUMN_USERNAME + " TEXT NOT NULL, "
-                + COLUMN_PASSWORD + " TEXT NOT NULL, "
                 + COLUMN_EMAIL + " TEXT UNIQUE NOT NULL, "
                 + COLUMN_ROLE + " TEXT NOT NULL, "
                 + COLUMN_IMAGE + " BLOB, "
@@ -145,13 +143,11 @@ public class DBHelper extends SQLiteOpenHelper {
         if (cursor.getCount() == 0) {
             ContentValues values = new ContentValues();
             values.put(COLUMN_USERNAME, "Admin");
-            values.put(COLUMN_PASSWORD, "admin123");
             values.put(COLUMN_EMAIL, "han171023fpt@gmail.com");
             values.put(COLUMN_ROLE, "admin");
-            values.put(COLUMN_IS_EMAIL_VERIFIED, 1); // Admin is verified by default
+            values.put(COLUMN_IS_EMAIL_VERIFIED, 1);
             db.insert(TABLE_USERS, null, values);
             Log.d(TAG, "Default admin account created in SQLite");
-
         }
         cursor.close();
     }
@@ -168,16 +164,27 @@ public class DBHelper extends SQLiteOpenHelper {
             values.put(COLUMN_IMAGE, image);
         }
 
-        long result = db.insert(TABLE_USERS, null, values);
-        Log.d(TAG, "Add user result: " + result);
-        return result != -1;
+        try {
+            long result = db.insertOrThrow(TABLE_USERS, null, values);
+            Log.d(TAG, "Add user result: " + result + " for email: " + email);
+            return result != -1;
+        } catch (SQLException e) {
+            Log.e(TAG, "SQLException adding user for email: " + email + ", Error: " + e.getMessage());
+            return false;
+        } finally {
+            if (db != null && db.isOpen()) {
+                db.close();
+            }
+        }
     }
+
     public void syncEmailVerificationStatus(String email, boolean isVerified) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(COLUMN_IS_EMAIL_VERIFIED, isVerified ? 1 : 0);
         db.update(TABLE_USERS, values, COLUMN_EMAIL + "=?", new String[]{email});
     }
+
     public boolean deleteUser(int userId) {
         SQLiteDatabase db = this.getWritableDatabase();
         int rowsAffected = db.delete(TABLE_USERS, COLUMN_ID + "=?", new String[]{String.valueOf(userId)});
@@ -198,7 +205,7 @@ public class DBHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getReadableDatabase();
         User user = null;
 
-        String[] columns = {COLUMN_ID, COLUMN_USERNAME, COLUMN_PASSWORD, COLUMN_EMAIL, COLUMN_ROLE, COLUMN_IMAGE, COLUMN_IS_EMAIL_VERIFIED};
+        String[] columns = {COLUMN_ID, COLUMN_USERNAME, COLUMN_EMAIL, COLUMN_ROLE, COLUMN_IMAGE, COLUMN_IS_EMAIL_VERIFIED};
         Cursor cursor = db.query(TABLE_USERS, columns, COLUMN_ID + "=?", new String[]{String.valueOf(id)},
                 null, null, null);
 
@@ -206,16 +213,17 @@ public class DBHelper extends SQLiteOpenHelper {
             user = new User(
                     cursor.getInt(0),
                     cursor.getString(1),
+                    "", // Không có password
                     cursor.getString(2),
                     cursor.getString(3),
-                    cursor.getString(4),
-                    cursor.getBlob(5),
-                    cursor.getInt(6) == 1
+                    cursor.getBlob(4),
+                    cursor.getInt(5) == 1
             );
         }
         cursor.close();
         return user;
     }
+
     public User getUserByEmail(String email) {
         SQLiteDatabase db = this.getReadableDatabase();
         User user = null;
@@ -238,29 +246,13 @@ public class DBHelper extends SQLiteOpenHelper {
         cursor.close();
         return user;
     }
+
     public User getUserByEmailAndPassword(String email, String password) {
-        SQLiteDatabase db = this.getReadableDatabase();
-        User user = null;
 
-        String[] columns = {COLUMN_ID, COLUMN_USERNAME, COLUMN_PASSWORD, COLUMN_EMAIL, COLUMN_ROLE, COLUMN_IMAGE, COLUMN_IS_EMAIL_VERIFIED};
-        Cursor cursor = db.query(TABLE_USERS, columns, COLUMN_EMAIL + "=? AND " + COLUMN_PASSWORD + "=?",
-                new String[]{email, password}, null, null, null);
-
-        if (cursor.moveToFirst()) {
-            user = new User(
-                    cursor.getInt(0),
-                    cursor.getString(1),
-                    cursor.getString(2),
-                    cursor.getString(3),
-                    cursor.getString(4),
-                    cursor.getBlob(5),
-                    cursor.getInt(6) == 1
-            );
-        }
-        cursor.close();
-        return user;
+        return null;
     }
-    // Thêm phương thức getAllUsers
+
+
     public List<User> getAllUsers() {
         List<User> users = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
@@ -277,7 +269,7 @@ public class DBHelper extends SQLiteOpenHelper {
                     User user = new User(
                             cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_ID)),
                             cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_USERNAME)),
-                            "", // Không có password trong bảng
+                            "", // Không có password
                             cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_EMAIL)),
                             cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ROLE)),
                             cursor.getBlob(cursor.getColumnIndexOrThrow(COLUMN_IMAGE)),
@@ -302,11 +294,7 @@ public class DBHelper extends SQLiteOpenHelper {
     }
 
     public boolean updateUserPassword(String email, String newPassword) {
-        SQLiteDatabase db = this.getWritableDatabase();
-        ContentValues values = new ContentValues();
-        values.put(COLUMN_PASSWORD, newPassword);
-        int rowsAffected = db.update(TABLE_USERS, values, COLUMN_EMAIL + "=?", new String[]{email});
-        return rowsAffected > 0;
+        return false;
     }
 
     public boolean setEmailVerified(String email) {
@@ -320,15 +308,15 @@ public class DBHelper extends SQLiteOpenHelper {
     public Cursor getUserDetails() {
         SQLiteDatabase db = this.getReadableDatabase();
         return db.query(TABLE_USERS,
-                new String[]{COLUMN_ID, COLUMN_USERNAME, COLUMN_PASSWORD, COLUMN_EMAIL, COLUMN_ROLE, COLUMN_IMAGE, COLUMN_IS_EMAIL_VERIFIED},
+                new String[]{COLUMN_ID, COLUMN_USERNAME, COLUMN_EMAIL, COLUMN_ROLE, COLUMN_IMAGE, COLUMN_IS_EMAIL_VERIFIED},
                 COLUMN_ROLE + "!=?", new String[]{"admin"},
                 null, null, COLUMN_ID + " ASC");
     }
+
     public boolean updateUser(User user) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(COLUMN_USERNAME, user.getUsername());
-        values.put(COLUMN_PASSWORD, user.getPassword());
         values.put(COLUMN_EMAIL, user.getEmail());
         values.put(COLUMN_ROLE, user.getRole());
         if (user.getImage() != null) {
@@ -339,10 +327,10 @@ public class DBHelper extends SQLiteOpenHelper {
                 new String[]{String.valueOf(user.getId())});
         return rowsAffected > 0;
     }
+
     public int getOrCreateDefaultAlbum() {
         SQLiteDatabase db = this.getWritableDatabase();
 
-        // Kiểm tra xem album mặc định đã tồn tại chưa
         Cursor cursor = db.query(TABLE_ALBUMS, new String[]{COLUMN_ALBUM_ID},
                 COLUMN_ALBUM_TITLE + "=?", new String[]{"Default Album"},
                 null, null, null);
@@ -353,7 +341,6 @@ public class DBHelper extends SQLiteOpenHelper {
             return albumId;
         }
 
-        // Nếu chưa có, tạo album mặc định
         ContentValues values = new ContentValues();
         values.put(COLUMN_ALBUM_TITLE, "Default Album");
         values.put(COLUMN_RELEASE_DATE, "2024-01-01");
@@ -363,11 +350,11 @@ public class DBHelper extends SQLiteOpenHelper {
         cursor.close();
         return (int) albumId;
     }
+
     public boolean addSong(String title, String artist, int albumId, int duration, String songUrl, byte[] image) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues contentValues = new ContentValues();
 
-        // Nếu không có albumId được chỉ định, sử dụng album mặc định
         if (albumId <= 0) {
             albumId = getOrCreateDefaultAlbum();
         }
@@ -414,6 +401,7 @@ public class DBHelper extends SQLiteOpenHelper {
         Log.d(TAG, "getAllSongs: Total songs retrieved = " + songs.size());
         return songs;
     }
+
     public Song getSongById(int songId) {
         SQLiteDatabase db = this.getReadableDatabase();
         Song song = null;
@@ -434,6 +422,7 @@ public class DBHelper extends SQLiteOpenHelper {
         cursor.close();
         return song;
     }
+
     public boolean deleteSong(int songId) {
         SQLiteDatabase db = this.getWritableDatabase();
         int rowsAffected = db.delete(TABLE_SONGS, COLUMN_SONG_ID + " = ?", new String[]{String.valueOf(songId)});
@@ -468,6 +457,7 @@ public class DBHelper extends SQLiteOpenHelper {
         cursor.close();
         return isFavorite;
     }
+
     public List<Song> getFavoriteSongs(int userId) {
         List<Song> favoriteSongs = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
@@ -495,16 +485,17 @@ public class DBHelper extends SQLiteOpenHelper {
         cursor.close();
         return favoriteSongs;
     }
+
     public boolean addListeningHistory(int userId, int songId) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(COLUMN_USER_ID, userId);
         values.put(COLUMN_SONG_ID, songId);
-        // Timestamp sẽ tự động được thêm vào nhờ DEFAULT CURRENT_TIMESTAMP
 
         long result = db.insert(TABLE_LISTENING_HISTORY, null, values);
         return result != -1;
     }
+
     public static class ListeningHistoryItem {
         private int historyId;
         private int userId;
@@ -531,6 +522,7 @@ public class DBHelper extends SQLiteOpenHelper {
         public String getArtist() { return artist; }
         public String getTimestamp() { return timestamp; }
     }
+
     public List<ListeningHistoryItem> getUserListeningHistory(int userId) {
         List<ListeningHistoryItem> history = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
@@ -567,5 +559,4 @@ public class DBHelper extends SQLiteOpenHelper {
         Log.d(TAG, "Total history items retrieved: " + history.size());
         return history;
     }
-
 }
